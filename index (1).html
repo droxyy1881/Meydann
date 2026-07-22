@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meydan — herkesin plak koyduğu yer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14110f;
+    --panel:#1c1712;
+    --panel-2:#231c15;
+    --accent:#e8a33d;
+    --accent-dim:#8a621f;
+    --moss:#7c9473;
+    --text:#f2ece1;
+    --muted:#a89a86;
+    --line:rgba(242,236,225,0.12);
+    --line-strong:rgba(242,236,225,0.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Work Sans',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1040px;margin:0 auto;padding:28px 20px 80px;}
+  h1,h2,h3{font-family:'Oswald',sans-serif;font-weight:600;letter-spacing:0.02em;margin:0;}
+  a{color:var(--accent);}
+
+  /* topbar */
+  .topbar{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--line-strong);
+    padding-bottom:18px;margin-bottom:36px;flex-wrap:wrap;gap:12px;
+  }
+  .brand h1{font-size:34px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text);}
+  .brand p{margin:4px 0 0;color:var(--muted);font-size:14px;font-style:italic;font-family:'Work Sans',sans-serif;}
+  .badge{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--moss);
+    border:1px solid var(--line-strong);padding:6px 12px;border-radius:999px;
+    white-space:nowrap;
+  }
+
+  /* hero */
+  .hero{
+    display:grid;grid-template-columns:200px 1fr;gap:32px;
+    margin-bottom:40px;align-items:stretch;
+  }
+  @media (max-width:680px){.hero{grid-template-columns:1fr;}}
+
+  .dial-wrap{
+    display:flex;align-items:center;justify-content:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;
+  }
+  #needle{transform-origin:100px 100px;transition:transform 1.2s cubic-bezier(.4,0,.2,1);}
+  @media (prefers-reduced-motion:reduce){#needle{transition:none;}}
+
+  .now-playing{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:20px 22px;display:flex;flex-direction:column;gap:12px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;
+    color:var(--accent);text-transform:uppercase;
+  }
+  #yt-target-wrap{
+    background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;
+    border:1px solid var(--line-strong);
+  }
+  #yt-target{width:100%;height:100%;}
+  #np-title{font-size:20px;color:var(--text);}
+  #np-meta{margin:0;font-size:13px;color:var(--muted);}
+  .controls{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;}
+  button{
+    font-family:'Work Sans',sans-serif;font-size:14px;font-weight:500;
+    background:transparent;color:var(--text);
+    border:1px solid var(--line-strong);border-radius:8px;
+    padding:9px 16px;cursor:pointer;transition:background .15s,border-color .15s;
+  }
+  button:hover{background:var(--panel-2);border-color:var(--accent-dim);}
+  button:active{transform:scale(0.98);}
+  button.primary{border-color:var(--accent);color:var(--accent);}
+  button.primary:hover{background:rgba(232,163,61,0.1);}
+  button:disabled{opacity:0.4;cursor:not-allowed;}
+
+  /* add panel */
+  .add-panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:22px;margin-bottom:44px;
+  }
+  .add-panel h3{font-size:17px;margin-bottom:14px;color:var(--text);}
+  #add-form{display:grid;grid-template-columns:1fr 2fr auto;gap:10px;}
+  @media (max-width:600px){#add-form{grid-template-columns:1fr;}}
+  input{
+    font-family:'Work Sans',sans-serif;font-size:14px;color:var(--text);
+    background:var(--bg);border:1px solid var(--line-strong);border-radius:8px;
+    padding:10px 12px;outline:none;
+  }
+  input:focus{border-color:var(--accent);}
+  input::placeholder{color:var(--muted);}
+  .status{margin:10px 0 0;font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-height:16px;}
+  .status.err{color:#d97757;}
+  .status.ok{color:var(--moss);}
+
+  /* board */
+  .board-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;}
+  .board-head h3{font-size:20px;text-transform:uppercase;letter-spacing:0.03em;}
+  .board-head .muted{color:var(--muted);font-size:13px;font-family:'IBM Plex Mono',monospace;}
+  .grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;
+  }
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:14px;display:flex;flex-direction:column;gap:8px;
+  }
+  .card:nth-child(3n+1){transform:rotate(-0.4deg);}
+  .card:nth-child(3n+2){transform:rotate(0.3deg);}
+  .card:nth-child(3n){transform:rotate(-0.2deg);}
+  .card img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:#000;}
+  .card h4{margin:0;font-family:'Work Sans',sans-serif;font-size:14px;font-weight:600;color:var(--text);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .card .meta{font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+  .card .row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:2px;}
+  .vote-btn{padding:6px 10px;font-size:13px;display:flex;align-items:center;gap:6px;}
+  .vote-btn.voted{color:var(--accent);border-color:var(--accent);}
+  .play-btn{padding:6px 12px;font-size:13px;}
+  .empty{
+    grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--muted);
+    border:1px dashed var(--line-strong);border-radius:10px;
+  }
+  .empty h4{color:var(--text);font-family:'Oswald',sans-serif;font-size:18px;margin-bottom:6px;}
+
+  footer{margin-top:56px;border-top:1px solid var(--line);padding-top:18px;
+    color:var(--muted);font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>Meydan</h1>
+      <p>Plağını getir, meydana bırak — herkes çalabilsin.</p>
+    </div>
+    <div class="badge" id="track-badge">panoda 0 şarkı</div>
+  </div>
+
+  <div class="hero">
+    <div class="dial-wrap" aria-hidden="true">
+      <svg viewBox="0 0 200 200" width="140" height="140">
+        <circle cx="100" cy="100" r="92" fill="none" stroke="var(--line-strong)" stroke-width="1.5"/>
+        <g stroke="var(--muted)" stroke-width="1.5">
+          <line x1="100" y1="12" x2="100" y2="24"/>
+          <line x1="100" y1="176" x2="100" y2="188"/>
+          <line x1="12" y1="100" x2="24" y2="100"/>
+          <line x1="176" y1="100" x2="188" y2="100"/>
+        </g>
+        <g id="needle">
+          <line x1="100" y1="100" x2="100" y2="30" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <circle cx="100" cy="100" r="6" fill="var(--accent)"/>
+      </svg>
+    </div>
+
+    <div class="now-playing">
+      <span class="eyebrow" id="np-eyebrow">ŞU AN MEYDANDA — SESSİZ</span>
+      <div id="yt-target-wrap"><div id="yt-target"></div></div>
+      <h2 id="np-title">Meydan sessiz</h2>
+      <p id="np-meta">İlk plağı sen bırak.</p>
+      <div class="controls">
+        <button id="btn-random">Rastgele çal</button>
+        <button id="btn-next">Sıradaki</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="add-panel">
+    <h3>Plağını meydana bırak</h3>
+    <form id="add-form">
+      <input id="nick" placeholder="Adın veya rumuzun" maxlength="24" required>
+      <input id="url" placeholder="YouTube linki yapıştır (youtube.com/watch?v=...)" required>
+      <button type="submit" class="primary" id="add-btn">Bırak</button>
+    </form>
+    <p class="status" id="add-status"></p>
+  </div>
+
+  <div class="board">
+    <div class="board-head">
+      <h3>Meydan panosu</h3>
+      <span class="muted" id="board-count"></span>
+    </div>
+    <div class="grid" id="grid">
+      <div class="empty">
+        <h4>Meydan henüz boş</h4>
+        <p>Bir YouTube linki yapıştır, ilk plağı sen bırak.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Meydan, ziyaretçilerin kendi paylaştığı YouTube bağlantılarını gösteren, girişsiz ve ücretsiz ortak bir panodur.
+    Şarkılar YouTube'un kendi oynatıcısıyla çalınır, dosya barındırılmaz. Herkes görebildiği için lütfen paylaşımlarına dikkat et.
+  </footer>
+
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+(function(){
+  var player = null;
+  var playerReady = false;
+  var pendingVideoId = null;
+  var tracks = [];
+  var votedIds = [];
+  var nickname = '';
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function extractVideoId(url){
+    try{
+      var m = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+      return m ? m[1] : null;
+    }catch(e){ return null; }
+  }
+
+  function timeAgo(ts){
+    var s = Math.floor((Date.now()-ts)/1000);
+    if(s<60) return 'az önce';
+    var m = Math.floor(s/60);
+    if(m<60) return m+' dk önce';
+    var h = Math.floor(m/60);
+    if(h<24) return h+' sa önce';
+    var d = Math.floor(h/24);
+    return d+' gün önce';
+  }
+
+  async function loadTracks(){
+    try{
+      var res = await window.storage.get('tracks', true);
+      tracks = res && res.value ? JSON.parse(res.value) : [];
+    }catch(e){
+      tracks = [];
+    }
+  }
+
+  async function saveTracks(){
+    try{
+      await window.storage.set('tracks', JSON.stringify(tracks), true);
+    }catch(e){
+      console.error('kaydetme hatası', e);
+    }
+  }
+
+  function loadLocal(){
+    try{
+      var n = window.storage.get('nickname', false);
+    }catch(e){}
+  }
+
+  async function loadPrefs(){
+    try{
+      var n = await window.storage.get('nickname', false);
+      if(n && n.value) nickname = n.value;
+    }catch(e){}
+    try{
+      var v = await window.storage.get('voted_ids', false);
+      votedIds = v && v.value ? JSON.parse(v.value) : [];
+    }catch(e){
+      votedIds = [];
+    }
+    if(nickname) document.getElementById('nick').value = nickname;
+  }
+
+  async function saveNickname(n){
+    nickname = n;
+    try{ await window.storage.set('nickname', n, false); }catch(e){}
+  }
+
+  async function saveVotedIds(){
+    try{ await window.storage.set('voted_ids', JSON.stringify(votedIds), false); }catch(e){}
+  }
+
+  function sortedTracks(){
+    return tracks.slice().sort(function(a,b){
+      if(b.votes !== a.votes) return b.votes - a.votes;
+      return b.addedAt - a.addedAt;
+    });
+  }
+
+  function render(){
+    var list = sortedTracks();
+    var grid = document.getElementById('grid');
+    document.getElementById('track-badge').textContent = 'panoda ' + tracks.length + ' şarkı';
+    document.getElementById('board-count').textContent = tracks.length + ' şarkı';
+
+    if(list.length === 0){
+      grid.innerHTML = '<div class="empty"><h4>Meydan henüz boş</h4><p>Bir YouTube linki yapıştır, ilk plağı sen bırak.</p></div>';
+      return;
+    }
+
+    grid.innerHTML = list.map(function(t){
+      var voted = votedIds.indexOf(t.id) !== -1;
+      return '<div class="card" data-id="'+t.id+'">' +
+        '<img src="'+escapeHtml(t.thumb)+'" alt="" loading="lazy">' +
+        '<h4>'+escapeHtml(t.title)+'</h4>' +
+        '<div class="meta">'+escapeHtml(t.addedBy)+' · '+timeAgo(t.addedAt)+'</div>' +
+        '<div class="row">' +
+          '<button class="vote-btn'+(voted?' voted':'')+'" data-action="vote" data-id="'+t.id+'">&#9825; '+t.votes+'</button>' +
+          '<button class="play-btn primary" data-action="play" data-id="'+t.id+'">Çal</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function findTrack(id){
+    for(var i=0;i<tracks.length;i++) if(tracks[i].id === id) return tracks[i];
+    return null;
+  }
+
+  function playTrack(track){
+    if(!track) return;
+    document.getElementById('np-eyebrow').textContent = 'ŞU AN MEYDANDA — ÇALIYOR';
+    document.getElementById('np-title').textContent = track.title;
+    document.getElementById('np-meta').textContent = track.addedBy + ' tarafından bırakıldı';
+    if(playerReady && player && player.loadVideoById){
+      player.loadVideoById(track.videoId);
+    }else{
+      pendingVideoId = track.videoId;
+    }
+    var svg = document.getElementById('needle');
+    var angle = (Math.random()*140 - 70).toFixed(1);
+    svg.setAttribute('transform','rotate('+angle+' 100 100)');
+  }
+
+  function playRandom(){
+    var list = sortedTracks();
+    if(list.length === 0) return;
+    var t = list[Math.floor(Math.random()*list.length)];
+    playTrack(t);
+  }
+
+  function playNext(){
+    var list = sortedTracks();
+    if(list.length === 0) return;
+    var currentTitle = document.getElementById('np-title').textContent;
+    var idx = list.findIndex(function(t){ return t.title === currentTitle; });
+    var next = list[(idx+1) % list.length];
+    playTrack(next);
+  }
+
+  window.onYouTubeIframeAPIReady = function(){
+    player = new YT.Player('yt-target', {
+      height: '100%',
+      width: '100%',
+      playerVars: { rel: 0, modestbranding: 1 },
+      events: {
+        onReady: function(){
+          playerReady = true;
+          if(pendingVideoId){
+            player.loadVideoById(pendingVideoId);
+            pendingVideoId = null;
+          }
+        },
+        onStateChange: function(e){
+          if(e.data === YT.PlayerState.ENDED){
+            playNext();
+          }
+        }
+      }
+    });
+  };
+
+  async function handleAdd(e){
+    e.preventDefault();
+    var nickInput = document.getElementById('nick');
+    var urlInput = document.getElementById('url');
+    var statusEl = document.getElementById('add-status');
+    var addBtn = document.getElementById('add-btn');
+    var n = nickInput.value.trim();
+    var url = urlInput.value.trim();
+
+    statusEl.className = 'status';
+    statusEl.textContent = '';
+
+    if(!n){ statusEl.className='status err'; statusEl.textContent='Önce bir ad ya da rumuz yaz.'; return; }
+    var videoId = extractVideoId(url);
+    if(!videoId){ statusEl.className='status err'; statusEl.textContent='Bu bir YouTube linki gibi görünmüyor.'; return; }
+
+    await loadTracks();
+    if(tracks.some(function(t){ return t.videoId === videoId; })){
+      statusEl.className='status err';
+      statusEl.textContent='Bu şarkı zaten panoda. Oy vererek öne çıkarabilirsin.';
+      return;
+    }
+
+    addBtn.disabled = true;
+    statusEl.className='status';
+    statusEl.textContent='Bırakılıyor...';
+
+    var title = 'YouTube video';
+    var thumb = 'https://i.ytimg.com/vi/'+videoId+'/hqdefault.jpg';
+    try{
+      var oembedRes = await fetch('https://www.youtube.com/oembed?format=json&url=https://www.youtube.com/watch?v='+videoId);
+      if(oembedRes.ok){
+        var data = await oembedRes.json();
+        if(data.title) title = data.title;
+        if(data.thumbnail_url) thumb = data.thumbnail_url;
+      }
+    }catch(err){
+      // oEmbed başarısız olursa geri dönüş başlığı kullanılır
+    }
+
+    var track = {
+      id: videoId + '-' + Date.now(),
+      videoId: videoId,
+      title: title,
+      thumb: thumb,
+      addedBy: n,
+      addedAt: Date.now(),
+      votes: 0
+    };
+
+    tracks.push(track);
+    await saveTracks();
+    await saveNickname(n);
+    render();
+
+    urlInput.value = '';
+    addBtn.disabled = false;
+    statusEl.className='status ok';
+    statusEl.textContent='Plak meydana bırakıldı.';
+
+    if(tracks.length === 1){
+      playTrack(track);
+    }
+  }
+
+  async function handleGridClick(e){
+    var btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    var id = btn.getAttribute('data-id');
+    var action = btn.getAttribute('data-action');
+    var track = findTrack(id);
+    if(!track) return;
+
+    if(action === 'play'){
+      playTrack(track);
+    }else if(action === 'vote'){
+      if(votedIds.indexOf(id) !== -1) return;
+      await loadTracks();
+      var fresh = findTrack.call({}, id);
+      var t = null;
+      for(var i=0;i<tracks.length;i++) if(tracks[i].id===id) t = tracks[i];
+      if(!t) return;
+      t.votes += 1;
+      votedIds.push(id);
+      await saveTracks();
+      await saveVotedIds();
+      render();
+    }
+  }
+
+  async function init(){
+    await loadPrefs();
+    await loadTracks();
+    render();
+    document.getElementById('add-form').addEventListener('submit', handleAdd);
+    document.getElementById('grid').addEventListener('click', handleGridClick);
+    document.getElementById('btn-random').addEventListener('click', playRandom);
+    document.getElementById('btn-next').addEventListener('click', playNext);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
